@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marcar Ponto</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    {% load static %}
+</head>
+<style>
+    body{
+        font-family: montserrat;
+        padding-top: 250px;
+    }
+    h1, p, a{
+        color: white;
+        text-decoration: none;
+    }
+    a{
+        font-size: 20px;
+    }
+    #clock{
+        width: auto;
+        font-size: 80px;
+        margin-bottom: 10px;
+        color: white;
+    }
+    .relogio_e_deslocamento{
+        width: 500px;
+        height: 400px;
+        background: rgba(37, 37, 37, 0.685); /* Fundo semitransparente */
+        border-radius: 15px;
+        padding: 0px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(10px); /* Desfoque de fundo */
+        -webkit-backdrop-filter: blur(10px); /* Para compatibilidade com navegadores baseados no WebKit */
+        border: 1px solid rgba(255, 255, 255, 0.3); /* Borda */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .form_container{
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    input{
+        margin-top: 15px;
+        font-size: 20px;
+        width: 100px;
+        height: 50px;
+        font-family: montserrat;
+        border-radius: 10px;
+        border: none;
+        background-color: rgba(255, 255, 255, 0.973);
+    }
+    select{
+        font-size: 25px;
+        margin-bottom: 15px;
+        width: 150px;
+        border: none;
+        border-radius: 5px;
+        text-align: center;
+        font-family: montserrat;
+        text-decoration: none;
+    }
+    .mensagem_erro{
+        width: 400px;
+        border-radius: 5px;
+        background-color: rgb(255, 219, 219);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 45px;
+        margin-bottom: 10px;
+        transition: 1.5s;
+    }
+</style>
+<body background="{% static 'img/bg.jpg' %}">
+    <center>
+        <h1>Identificador: {{request.user.username}}</h1>
+        <p>siga para a marcação de seu ponto online</p>
+        {% if Erro %}
+            <div style="color: red; text-align: center;" class="mensagem_erro">
+                <strong>{{ Erro }}</strong>
+            </div>
+        {% endif %}
+    </center>
+
+    <div class="form_container">
+        <form action="{% url 'marcador' %}" method="POST">{%csrf_token%}
+            <div class="fundo_preto">
+                <div class="relogio_e_deslocamento">
+                    <div class="relogio_e_deslocamento_align">
+                        <div id="clock"></div>
+                        <center>
+                            <select name="choice_tipo" id="selecao_deslocamento_tipo" required>
+                                <option value="">Tipo</option>
+                                <option value="Entrada">Entrada</option>
+                                <option value="Saida">Saida</option>
+                            </select>
+                            <br>
+                            <select name="choice_para_onde" id="selecao_deslocamento_para_onde" required>
+                                <option value="">Para</option>
+                                <option value="quarto">quarto</option>
+                                <option value="sala">sala</option>
+                                <option value="cozinha">cozinha</option>
+                                <option value="banheiro">banheiro</option>
+                            </select>
+                            <br>                        
+                            <input type="submit" value="Marcar">
+                        </center>
+                    </div>
+                </div>
+            </div>
+            <div class="nav_links">
+                <a href="{% url 'marcações' %}">Ir para minhas marcações |</a> &nbsp <a href="{% url 'logout' %}">Sair</a>
+            </div>
+        </form>
+    </div>
+
+    <br><br>
+</body>
+<script>
+    function updateClock() {
+        const now = new Date();
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const seconds = now.getSeconds().toString().padStart(2, '0');
+        document.getElementById('clock').innerText = `${hours}:${minutes}:${seconds}`;
+    }
+
+    setInterval(updateClock, 1000);
+    window.onload = updateClock;
+</script>
+</html>

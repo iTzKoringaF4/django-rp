@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    {% load static %}
+  </head>
+<style>
+  body{
+    font-family: montserrat;
+    padding-top: 300px;
+  }
+  h1, a{
+    color: white;
+    text-decoration: none;
+  }
+  a{
+    font-size: 25px;
+  }
+  .tabela{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 30px;
+  }
+  table {
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  margin-bottom: 20px;
+  font-size: 30px;
+  background: rgba(37, 37, 37, 0.685); /* Fundo semitransparente */
+  border-radius: 15px;
+  padding: 0px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px); /* Desfoque de fundo */
+  -webkit-backdrop-filter: blur(10px); /* Para compatibilidade com navegadores baseados no WebKit */
+  border: 1px solid rgba(255, 255, 255, 0.3); /* Borda */
+  margin-bottom: 10px;
+  color: white;
+}
+caption {
+  caption-side: bottom;
+  padding: 10px;
+  font-weight: bold;
+}
+
+thead,
+tfoot {
+  background: rgba(37, 37, 37, 0.685); /* Fundo semitransparente */
+  padding: 0px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px); /* Desfoque de fundo */
+  -webkit-backdrop-filter: blur(10px); /* Para compatibilidade com navegadores baseados no WebKit */
+  border: 1px solid rgba(255, 255, 255, 0.3); /* Borda */
+  color: white;
+}
+
+th,
+td {
+  border: 1px solid rgb(160 160 160);
+  padding: 8px 10px;
+}
+
+td:last-of-type {
+  text-align: center;
+}  
+</style>
+<body background="{% static 'img/bg.jpg' %}">
+    <center><h1>Minhas marcações</h1></center>
+    {% for data, marcacoes in dados.items %}
+    <div class="tabela">
+      <table>
+          <thead>
+            <tr>
+              <!--Titulos, primeira linha toda-->
+              <th scope="col">Data</th>
+              <th scope="col">Chave</th>
+              <th scope="col">Ação</th>
+              <th scope="col">Em</th>
+            </tr>
+          </thead>
+          {% for marcacao in marcacoes %}
+          <tbody>
+            <tr>
+              <!--Segunda linha, primeira coluna. Embaixo do "Data"-->
+              <th scope="row">{{ data|date:"d/M/Y" }}</th>
+              <!--Segunda linha, segunda coluna. Embaixo do "Login"-->
+              <td>
+                  {{request.user.username}}
+              </td>
+              <!--Segunda linha, terceira coluna. Embaixo da coluna de Ação-->
+              <td>
+                {{ marcacao.tipo }}: {{ marcacao.hora_marcada|date:"H:i" }}
+              </td>
+              <!--Segunda linha, quarta coluna. Embaixo da coluna de Ação-->
+              <td>
+                  <p>{{ marcacao.para_onde }}</p>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="3">Nenhuma marcação encontrada</td>
+            </tr>
+          </tbody>
+          {% endfor %}
+        {% endfor %}
+        </table>
+    </div>
+    <center>
+      <a href="{% url 'dashboard' %}">Voltar para Dashboard |</a><a href="{% url 'logout' %}"> Sair</a>
+    </center>
+</body>
+</html>
