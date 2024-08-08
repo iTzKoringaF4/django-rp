@@ -11,11 +11,14 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import HorasMarcadas
 from django.utils import timezone
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+import os
 
 # Create your views here.
 def login_text(request):
     return render(request, 'login_text.html')
-
+#-----------------------------------------------------------------------------------------------------------------------
 def login(request):
     if request.method == "GET":
         return render(request, 'dashboard.html')
@@ -31,7 +34,8 @@ def login(request):
             return render(request, 'dashboard.html')
         else:
             return HttpResponse('Username ou Senha iválidos')
-            
+#-----------------------------------------------------------------------------------------------------------------------            
+
 def login_qrcode(request):
     if request.method == "POST":
         username = request.POST.get('username')
@@ -54,11 +58,13 @@ def login_qrcode(request):
     else:
         return render(request, 'login_qrcode.html')
 
+ #-----------------------------------------------------------------------------------------------------------------------   
 
-    
 @login_required(login_url="/")
 def dashboard(request):
         return render(request, 'dashboard.html')
+
+#-----------------------------------------------------------------------------------------------------------------------
 
 def marcador(request):
     if request.method == "POST":
@@ -93,10 +99,12 @@ def marcador(request):
     else:
         erro = "Envie o formulario novamente"
         return  render(request, 'dashboard.html', {'Erro': erro})
+    
+#-----------------------------------------------------------------------------------------------------------------------
 
 @login_required(login_url="/")
 def minha_marcacao(request):
-    # Buscar todas as marcações do usuário logado
+    # Buscar todas as marcações do usuário logado com um limite de 5
     usuario = request.user
     pontos = HorasMarcadas.objects.filter(nome_marcador=usuario).order_by('-hora_marcada')
 
@@ -110,7 +118,81 @@ def minha_marcacao(request):
 
     return render(request, 'minha_marcacao.html', {'dados': dados})
 
+#-----------------------------------------------------------------------------------------------------------------------
+
+@login_required(login_url="/")
+def filtro_de_data(request):
+    data = request.GET.get('data')
+    usuario = request.user
+    if data:
+        pontos = HorasMarcadas.objects.filter(nome_marcador=usuario, hora_marcada__date=data).order_by('-hora_marcada')
+    else:
+        pontos = HorasMarcadas.objects.filter(nome_marcador=usuario).order_by('-hora_marcada')[:5]
+
+    dados = {}
+    for ponto in pontos:
+        data = ponto.hora_marcada.date()
+        if data not in dados:
+            dados[data] = []
+        dados[data].append(ponto)
+
+    return render(request, 'minha_marcacao.html', {'dados': dados})
+
+#-----------------------------------------------------------------------------------------------------------------------
+
 @login_required(login_url="/")
 def logout(request):
     auth_logout(request)
     return redirect('login_qrcode')
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def exportar_para_google_sheets(request):
+    # Obter o caminho absoluto para o arquivo de credenciais
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    cred_path = os.path.join(BASE_DIR, 'static', 'cred.json')
+    
+    # Configurar as credenciais
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    creds = ServiceAccountCredentials.from_json_keyfile_name(cred_path, scope)
+    client = gspread.authorize(creds)
+
+    # Especificar a URL ou o ID da planilha
+    # Você pode usar a URL completa da planilha:
+    spreadsheet = client.open_by_url('https://docs.google.com/spreadsheets/d/1t07F1k_lgrsc-7K9hRWyiaCgX5hoj7wj-2CuDoY15-o/edit?usp=sharing')
+    # Ou usar o ID da planilha:
+    #spreadsheet = client.open_by_key('SEU_ID_AQUI')
+    
+    # Abrir a primeira aba da planilha
+    sheet = spreadsheet.sheet1
+
+    # Obter os dados do banco de dados e agrupar por nome e data
+    marcacoes = HorasMarcadas.objects.all().order_by('nome_marcador', 'hora_marcada')
+    
+    # Preparar os dados para a planilha
+    data = [["Nome", "Tipo", "Hora Marcada", "Para Onde", "Tipo", "Hora Marcada", "De Onde"]]
+    
+    paired_data = []
+    for i in range(0, len(marcacoes), 2):
+        if i + 1 < len(marcacoes):
+            entrada = marcacoes[i]
+            saida = marcacoes[i + 1]
+            if entrada.nome_marcador == saida.nome_marcador:
+                paired_data.append([
+                    entrada.nome_marcador.username,
+                    entrada.tipo,
+                    entrada.hora_marcada.strftime("%d/%m/%Y %H:%M:%S"),
+                    entrada.para_onde,
+                    saida.tipo,
+                    saida.hora_marcada.strftime("%d/%m/%Y %H:%M:%S"),
+                    saida.para_onde,
+                ])
+    
+    # Limpar a planilha existente
+    sheet.clear()
+
+    # Inserir os novos dados
+    if paired_data:
+        sheet.insert_rows(data + paired_data, 1)
+
+    return HttpResponse("Dados exportados para o Google Sheets com sucesso!")
